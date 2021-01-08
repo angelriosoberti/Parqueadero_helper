@@ -1,21 +1,31 @@
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
-
+// variables para la pantalla 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
-int dueno = "Sr. Rios ";
-int vershon = "parking v0.2";
 
+float calibrador = 58.2;
+    // variable muestra para el muestreo del sensor.
+    int muestras = 5;
+// distancias en mm a medir
+int ingreso= 300;
+int inter= 150 ;
+int parqueado= 20;
+// los pines que se van a usar 
 int trig = 9;
 int eco = 8;
+// los pines que van a usar los led
 int led_verde = 4;
 int led_amarillo = 3;
 int led_rojo = 2;
-int led_med = 5;
-int duracion;
-int distancia;
 
-void setup()
-{
+// variables para el llamado de funciones
+float distancia;
+float filter;
+float tempo;
+
+void initLedS(){
+  const char* deve = "Sr. Rios ";
+  const char* vershon = "parking v0.3";
 
   lcd.init();
   lcd.backlight();
@@ -25,7 +35,7 @@ void setup()
   lcd.setCursor(0, 0);
   lcd.print("Bienvenido ");
   lcd.setCursor(0, 1);
-  lcd.print(dueno);
+  lcd.print(deve);
   delay(3000);
   lcd.clear();
   lcd.print("Asistente de  ");
@@ -33,6 +43,12 @@ void setup()
   lcd.print(vershon);
   delay(3000);
   lcd.clear();
+}
+
+void setup()
+{
+  // configuracion inicial para la pantalla con saludo
+  initLedS();
 
   // configuracion del sensor
   pinMode(trig, OUTPUT);
@@ -42,164 +58,96 @@ void setup()
   pinMode(led_amarillo, OUTPUT);
   pinMode(led_rojo, OUTPUT);
   pinMode(led_med, OUTPUT);
-
   Serial.begin(9600);
 }
 
-void loop()
+float tempoSen()// obtiene el tiempo entre ecos del sensor.
 {
+  float duracion = 0;
 
   digitalWrite(trig, HIGH);
   delayMicroseconds(10);
   digitalWrite(trig, LOW);
   duracion = pulseIn(eco, HIGH);
-  distancia = duracion / 58.2;
-  Serial.print("distancia:");
-  Serial.println(distancia);
-  lcd.clear();
-  lcd.print("DISTANCIA: ");
-  lcd.print(String(distancia));
-  lcd.setCursor(0, 1);
-  lcd.print("Duracion:");
-  lcd.print(String(duracion));
   delayMicroseconds(50);
 
-  
-  if( distancia <=300){
-   digitalWrite(led_med, HIGH);
-   lcd.clear();
-   lcd.print("DISTANCIA:");
-   lcd.print(String(distancia));
-   lcd.setCursor(14,0);
-   lcd.print("cm");
-   delay(1000);
-  
-  
-  }
-  
-  if(distancia <300 && distancia >=100){
-   digitalWrite(led_verde, HIGH);
-   delay((distancia)*10);
-   digitalWrite(led_verde, LOW);
-   lcd.clear();
-   lcd.print("DISTANCIA:");
-   lcd.print(String(distancia));
-   lcd.setCursor(14,0);
-   lcd.print("cm");
-   lcd.setCursor(0,1);
-   lcd.print("  <------------>");
-   delay(1000);
-  }
-  if(distancia < 100 && distancia >= 95){
-   digitalWrite(led_verde, HIGH);
-  
-   lcd.clear();
-   lcd.print("DISTANCIA:");
-   lcd.print(String(distancia));
-   lcd.setCursor(14,0);
-   lcd.print("cm");
-   lcd.setCursor(0,1);
-   lcd.print("   <----------->");
-   delay(1000);
-  }
-  
-  if(distancia < 95 && distancia >= 90){
-   digitalWrite(led_verde, HIGH);
-   digitalWrite(led_amarillo, HIGH);
-   delay((distancia)*10);
-   digitalWrite(led_amarillo, LOW);
-  
-   lcd.clear();
-   lcd.print("DISTANCIA:");
-   lcd.print(String(distancia));
-   lcd.setCursor(14,0);
-   lcd.print("cm");
-   lcd.setCursor(0,1);
-   lcd.print("     <--------->");
-   delay(1000);
-  }
-  
-  if(distancia < 90 && distancia >= 95){
-   digitalWrite(led_verde, HIGH);
-   digitalWrite(led_amarillo, HIGH);
-  
-   lcd.clear();
-   lcd.print("DISTANCIA:");
-   lcd.print(String(distancia));
-   lcd.setCursor(14,0);
-   lcd.print("cm");
-   lcd.setCursor(0,1);
-   lcd.print("      <-------->");
-  delay(1000);
-  }
-  if(distancia < 95 && distancia >= 10){
-   digitalWrite(led_verde, HIGH);
-   digitalWrite(led_amarillo, HIGH);
-   digitalWrite(led_rojo, HIGH);
-   delay((distancia)*100);
-   digitalWrite(led_rojo, LOW);
-  
-   lcd.clear();
-   lcd.print("DISTANCIA:");
-   lcd.print(String(distancia));
-   lcd.setCursor(14,0);
-   lcd.print("cm");
-   lcd.setCursor(0,1);
-   lcd.print("        <------>");
-   delay(1000);
-  
-  }
-  if(distancia < 10 && distancia >= 2){
-   digitalWrite(led_verde, HIGH);
-   digitalWrite(led_amarillo, HIGH);
-    digitalWrite(led_rojo, HIGH);
-  
-   lcd.clear();
-   lcd.print("DISTANCIA:");
-   lcd.print(String(distancia));
-   lcd.setCursor(14,0);
-   lcd.print("cm");
-   lcd.print("DISTANCIA:");
-   lcd.print(String(distancia));
-   lcd.setCursor(14,0);
-   lcd.print("cm");
-   lcd.setCursor(0,1);
-   lcd.print("          <---->");
-   delay(1000);
-  
-  
-   if(distancia < 3){
-             lcd.clear();
-   lcd.setCursor(0,1);
-   lcd.print("******ALTO******");
-   delay(5000);
-   lcd.clear();
-   lcd.setCursor(0,0);
-   lcd.print("APAGUE EL AUTO");
-   lcd.setCursor(0,1);
-   lcd.print("CIERRE LA PUERTA");
-   delay(5000);
-  
-       for(int tiempo = 0; tiempo <=10; tiempo ++){
-     delay(1000);
-    Serial.print("tiempo:");
-     Serial.println(tiempo);
-     if(tiempo >= 10 ){
-         digitalWrite(led_verde, LOW);
-         digitalWrite(led_amarillo, LOW);
-         digitalWrite(led_rojo, LOW);
-         for(int i=0; i<4 ; i++){
-         digitalWrite(led_med, LOW);
-         delay (1000);
-         digitalWrite(led_med, HIGH);
-     }
-     digitalWrite(led_med, LOW);
-   // colocar un delay para apagar todo y esperar el sensado de la puerta
-     break;
-    }
-  }
-   }
-  
-  }
-  
+  return duracion;
 }
+float filtradoPromedio(int samplesNumber, float (*funct)()) // *funct vendria a ser --> tempoSen() y promedia la cantidad de samplesNumber muestras
+{
+  float sum;
+  for (int i = 0; i < samplesNumber; i++)
+  {
+    sum += funct();
+  }
+
+  return sum / samplesNumber;
+}
+
+float medicionDistancia(float filtrado){
+int distancia = filtrado/calibrador;
+Serial.print(distancia);
+lcd.print("D: ");
+lcd.print(String(distancia));
+lcd.setCursor(0, 1);
+
+return distancia;
+}
+void ledStatus(int state, int idLed){
+  // estado : apagar(0),prender(1), intermitente(2)
+  // identificador de led : cual led de que pin
+      if (state == 2)
+      {
+        digitalWrite(idLed,HIGH);
+        delay(400);
+        digitalWrite(idLed, LOW);
+      }else if (state == 1)
+      {
+        digitalWrite(idLed, HIGH);
+      }else
+      {
+        digitalWrite(idLed, LOW);
+      } 
+}
+
+
+
+
+
+void loop()
+{
+
+  filter = filtradoPromedio(muestras, tempoSen);
+
+  if (filter >= 150 && filter <= 25000)
+  {
+    int D;
+       D =  medicionDistancia(filter);
+       if (D < parqueado)
+       {
+         ledStatus(1,led_rojo);
+         ledStatus(2, led_verde);
+         ledStatus(2, led_amarillo);
+        }
+        else if (D >= parqueado && D < inter)
+        {
+          ledStatus(0, led_rojo);
+          ledStatus(2, led_verde);
+          ledStatus(1, led_amarillo);
+        }
+        else 
+        {
+          ledStatus(0, led_rojo);
+          ledStatus(2, led_verde);
+          ledStatus(0, led_amarillo);
+        }
+  }
+
+
+    }
+  
+   
+  
+  
+  
+
