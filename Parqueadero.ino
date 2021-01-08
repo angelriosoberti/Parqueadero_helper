@@ -2,8 +2,13 @@
 #include <Wire.h>
 // variables para la pantalla 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
+// variables para el encoder 
+int A = 2;
+int B = 4;
+float Anterior = 58.2;
+volatile float calibrador = 50;
 
-float calibrador = 58.2;
+//float calibrador = 58.2;
 // variable muestra para el muestreo del sensor.
 int muestras = 5;
 // distancias en mm a medir
@@ -23,7 +28,33 @@ int led_rojo = 2;
 float distancia;
 float filter;
 float tempo;
+void ncoderSU()
+{
+  pinMode(A, INPUT);
+  pinMode(B, INPUT);
+  attachInterrupt(digitalPinToInterrupt(A), encoder, LOW);
+}
+void encoder()
+{
+  static unsigned long ultimaInterrupcion = 0; // variable static con ultimo valor de
+                                               // tiempo de interrupcion
+  unsigned long tiempoInterrupcion = millis(); // variable almacena valor de func. millis
 
+  if (tiempoInterrupcion - ultimaInterrupcion > 5)
+  {                             // rutina antirebote desestima
+                                // pulsos menores a 5 mseg.
+    if (digitalRead(B) == HIGH) // si B es HIGH, sentido horario
+    {
+      calibrador++; // incrementa POSICION en 1
+    }
+    else
+    {             // si B es LOW, senti anti horario
+      calibrador--; // decrementa POSICION en 1
+    }
+    calibrador = min(100, max(0, calibrador)); // establece limite inferior de 0 ysuperior de 100 para POSICION
+    ultimaInterrupcion = tiempoInterrupcion; // guarda valor actualizado del tiempo
+     }                                          // de la interrupcion en variable static
+}
 void initLedS(){
   const char* deve = "Sr. Rios ";
   const char* vershon = "parking v0.3";
@@ -48,9 +79,10 @@ void initLedS(){
 
 void setup()
 {
+  // setup del ncoder 
+  ncoderSU();
   // configuracion inicial para la pantalla con saludo
   initLedS();
-
   // configuracion del sensor
   pinMode(trig, OUTPUT);
   pinMode(eco, INPUT);
