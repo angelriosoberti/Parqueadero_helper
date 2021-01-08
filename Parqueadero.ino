@@ -4,8 +4,8 @@
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 float calibrador = 58.2;
-    // variable muestra para el muestreo del sensor.
-    int muestras = 5;
+// variable muestra para el muestreo del sensor.
+int muestras = 5;
 // distancias en mm a medir
 int ingreso= 300;
 int inter= 150 ;
@@ -14,6 +14,7 @@ int parqueado= 20;
 int trig = 9;
 int eco = 8;
 // los pines que van a usar los led
+int soundDiv = 5;
 int led_verde = 4;
 int led_amarillo = 3;
 int led_rojo = 2;
@@ -57,7 +58,7 @@ void setup()
   pinMode(led_verde, OUTPUT);
   pinMode(led_amarillo, OUTPUT);
   pinMode(led_rojo, OUTPUT);
-
+  pinMode(soundDiv, OUTPUT);
   Serial.begin(9600);
 }
 
@@ -99,8 +100,10 @@ void ledStatus(int state, int idLed){
       if (state == 2)
       {
         digitalWrite(idLed,HIGH);
-        delay(400);
+        digitalWrite(soundDiv,HIGH);
+            delay(400);
         digitalWrite(idLed, LOW);
+        digitalWrite(soundDiv, LOW);
       }else if (state == 1)
       {
         digitalWrite(idLed, HIGH);
@@ -116,34 +119,30 @@ void ledStatus(int state, int idLed){
 
 void loop()
 {
-
   filter = filtradoPromedio(muestras, tempoSen);
-
   if (filter >= 150 && filter <= 25000)
   {
     int D;
        D =  medicionDistancia(filter);
-       if (D < parqueado)
+       if (D < ingreso)
        {
          ledStatus(1,led_rojo);
          ledStatus(2, led_verde);
          ledStatus(2, led_amarillo);
         }
-        else if (D >= parqueado && D < inter)
+        else if (D >= ingreso && D < inter)
         {
           ledStatus(0, led_rojo);
           ledStatus(2, led_verde);
           ledStatus(1, led_amarillo);
         }
-        else 
+        else if (D >= ingreso && D < inter)
         {
           ledStatus(0, led_rojo);
           ledStatus(2, led_verde);
           ledStatus(0, led_amarillo);
         }
   }
-
-
     }
   
    
